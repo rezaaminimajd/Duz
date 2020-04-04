@@ -25,8 +25,45 @@ def random_choose(turn):
             return 'F' + str(x) + str(y)
 
 
-def advance_choose(turn):
-    pass
+def advance_choose(turn, action_log, my_data):
+    print('first data size :', len(my_data), ' action :', action_log)
+    n = len(action_log)
+    if turn == 0 or turn == 1:
+        return random_choose(turn)
+    new_data = {}
+    for i in my_data.keys():
+        if len(i) >= n and i[:n] == action_log:
+            new_data[i] = my_data[i]
+    my_data = new_data
+    print('access data :', new_data)
+    if len(new_data) == 0:
+        return random_choose(turn)
+    step = []
+    max_win = 0
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] != -1:
+                continue
+            next_step = action_log + 'F' + str(i) + str(j)
+            win_counter = 0
+            for k in my_data.keys():
+                if k == next_step:
+                    board[i][j] = turn % 2
+                    print('advance :', 'F' + str(i) + str(j),
+                          'win :', max_win)
+                    return 'F' + str(i) + str(j)
+
+                if len(k) >= n + 3 and k[:n + 3] == next_step:
+                    if my_data[k] == 1:
+                        win_counter += 1
+            if win_counter > max_win:
+                step = [i, j]
+                max_win = win_counter
+    if len(step) > 0:
+        board[step[0]][step[1]] = turn % 2
+        print('advance :', 'F' + str(step[0]) + str(step[1]), 'win :', max_win)
+        return 'F' + str(step[0]) + str(step[1])
+    return random_choose(turn)
 
 
 def random_receive(turn):
@@ -85,7 +122,10 @@ def show_board():
     print('---------------')
     for i in range(3):
         for j in range(3):
-            print(board[i][j], end=' ')
+            if board[i][j] != -1:
+                print(board[i][j], end=' ')
+                continue
+            print('*', end=' ')
         print()
     print('---------------')
 
@@ -97,16 +137,16 @@ def restart_board():
 
 
 def learn(my_log, my_prize):
-    # print('learning ...')
+    print('learning ...')
     extra_data = my_log.replace('E', 'G').replace('F', 'E').replace('G', 'F')
     if my_prize > 0:
         if my_log not in data.keys():
-            # data[my_log] = 1
+            data[my_log] = 1
             pass
         clean_data(extra_data)
     elif my_prize < 0:
         if extra_data not in data.keys():
-            # data[extra_data] = 1
+            data[extra_data] = 1
             pass
         clean_data(log)
     else:
@@ -114,19 +154,19 @@ def learn(my_log, my_prize):
 
 
 def clean_data(sub_log):
-    # print('clean data ...')
-    # print('kill data: ', sub_log)
+    print('clean data ...')
+    print('kill data: ', sub_log)
     keys_arr = []
     for i in data.keys():
         if len(i) >= len(sub_log) and i[:len(sub_log) - 3] == sub_log[:len(
                 sub_log) - 3]:
             keys_arr.append(i)
     for i in keys_arr:
-        # print(i)
+        print(i)
         data.pop(i)
     # if len(keys_arr) > 0:
-        # print('oh yes, good cleaning')
-        # print(sub_log)
+    # print('oh yes, good cleaning')
+    # print(sub_log)
 
 
 def main(my_data):
@@ -138,12 +178,12 @@ def main(my_data):
     end = True
     while end:
         if turn % 2 == my_turn:
-            action_log += random_choose(turn)
-            # show_board()
+            action_log += advance_choose(turn, action_log, data)
         else:
-            action_log += random_receive(turn)
+            action_log += receive(turn)
         end, winner = check_winner()
         turn += 1
+        show_board()
     if winner == my_turn:
         game_prize = 1
     elif winner == -1:
@@ -153,11 +193,12 @@ def main(my_data):
     return action_log, game_prize
 
 
-counter_game = 10000
+counter_game = 1
 data: map = read_data()
 
 while counter_game > 0:
     log, prize = main(data)
+    data = read_data()
     learn(log, prize)
     restart_board()
     counter_game -= 1
