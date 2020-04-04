@@ -90,36 +90,43 @@ def show_board():
     print('---------------')
 
 
+def restart_board():
+    for i in range(3):
+        for j in range(3):
+            board[i][j] = -1
+
+
 def learn(my_log, my_prize):
-    print('learning ...')
+    # print('learning ...')
     extra_data = my_log.replace('E', 'G').replace('F', 'E').replace('G', 'F')
     if my_prize > 0:
-        if my_log in data.keys():
-            data[my_log] += my_prize
-        else:
-            data[my_log] = my_prize
+        if my_log not in data.keys():
+            # data[my_log] = 1
+            pass
         clean_data(extra_data)
     elif my_prize < 0:
-        if extra_data in data.keys():
-            data[extra_data] += my_prize * -1
-        else:
-            data[extra_data] = my_prize * -1
+        if extra_data not in data.keys():
+            # data[extra_data] = 1
+            pass
         clean_data(log)
     else:
         data[my_log] = data[extra_data] = 0
 
 
 def clean_data(sub_log):
-    print('clean data ...')
-    print('kill data: ', sub_log)
+    # print('clean data ...')
+    # print('kill data: ', sub_log)
     keys_arr = []
     for i in data.keys():
         if len(i) >= len(sub_log) and i[:len(sub_log) - 3] == sub_log[:len(
                 sub_log) - 3]:
             keys_arr.append(i)
     for i in keys_arr:
-        print(i)
+        # print(i)
         data.pop(i)
+    # if len(keys_arr) > 0:
+        # print('oh yes, good cleaning')
+        # print(sub_log)
 
 
 def main(my_data):
@@ -132,9 +139,9 @@ def main(my_data):
     while end:
         if turn % 2 == my_turn:
             action_log += random_choose(turn)
-            show_board()
+            # show_board()
         else:
-            action_log += receive(turn)
+            action_log += random_receive(turn)
         end, winner = check_winner()
         turn += 1
     if winner == my_turn:
@@ -146,21 +153,11 @@ def main(my_data):
     return action_log, game_prize
 
 
-counter_game = 1
+counter_game = 10000
 data: map = read_data()
 
-
-def restart_board():
-    for i in range(3):
-        for j in range(3):
-            board[i][j] = -1
-
-
 while counter_game > 0:
-    # print('rand : ', counter_game)
-
     log, prize = main(data)
-
     learn(log, prize)
     restart_board()
     counter_game -= 1
