@@ -11,9 +11,9 @@ def read_data():
         return json.load(f)
 
 
-def write_data(data):
+def write_data(my_data):
     with open('data.json', 'w') as f:
-        json.dump(data, f)
+        json.dump(my_data, f)
 
 
 def random_choose(turn):
@@ -23,6 +23,19 @@ def random_choose(turn):
         if board[x][y] == -1:
             board[x][y] = turn % 2
             return 'F' + str(x) + str(y)
+
+
+def advance_choose(turn):
+    pass
+
+
+def random_receive(turn):
+    while True:
+        x = math.floor(random.random() * 3)
+        y = math.floor(random.random() * 3)
+        if board[x][y] == -1:
+            board[x][y] = turn % 2
+            return 'E' + str(x) + str(y)
 
 
 def receive(turn):
@@ -58,22 +71,62 @@ def check_winner():
         return False, board[0][0]
     if board[1][1] == board[0][2] == board[2][0] and board[2][0] != -1:
         return False, board[2][0]
-
+    draw = True
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] == -1:
+                draw = False
+    if draw:
+        return False, -1
     return True, -1
 
 
 def show_board():
+    print('---------------')
     for i in range(3):
         for j in range(3):
             print(board[i][j], end=' ')
         print()
+    print('---------------')
 
 
-def main():
-    data: map = read_data()
+def learn(my_log, my_prize):
+    print('learning ...')
+    extra_data = my_log.replace('E', 'G').replace('F', 'E').replace('G', 'F')
+    if my_prize > 0:
+        if my_log in data.keys():
+            data[my_log] += my_prize
+        else:
+            data[my_log] = my_prize
+        clean_data(extra_data)
+    elif my_prize < 0:
+        if extra_data in data.keys():
+            data[extra_data] += my_prize * -1
+        else:
+            data[extra_data] = my_prize * -1
+        clean_data(log)
+    else:
+        data[my_log] = data[extra_data] = 0
+
+
+def clean_data(sub_log):
+    print('clean data ...')
+    print('kill data: ', sub_log)
+    keys_arr = []
+    for i in data.keys():
+        if len(i) >= len(sub_log) and i[:len(sub_log) - 3] == sub_log[:len(
+                sub_log) - 3]:
+            keys_arr.append(i)
+    for i in keys_arr:
+        print(i)
+        data.pop(i)
+
+
+def main(my_data):
     winner = -1
     action_log = ''
     my_turn = math.floor(random.random() * 2)
+    # print('my turn :', my_turn)
     turn = 0
     end = True
     while end:
@@ -90,19 +143,25 @@ def main():
         game_prize = 0
     else:
         game_prize = -1
-    return data, action_log, game_prize
+    return action_log, game_prize
 
 
-my_map, log, prize = main()
-if log in my_map.keys():
-    my_map[log] += prize
-else:
-    my_map[log] = prize
-extra_data = log.replace('E', 'G').replace('F', 'E').replace('G', 'F')
-extra_data_prize = -1 * prize
-if extra_data in my_map.keys():
-    my_map[extra_data] += extra_data_prize
-else:
-    my_map[extra_data] = extra_data_prize
+counter_game = 1
+data: map = read_data()
 
-write_data(my_map)
+
+def restart_board():
+    for i in range(3):
+        for j in range(3):
+            board[i][j] = -1
+
+
+while counter_game > 0:
+    # print('rand : ', counter_game)
+
+    log, prize = main(data)
+
+    learn(log, prize)
+    restart_board()
+    counter_game -= 1
+write_data(data)
